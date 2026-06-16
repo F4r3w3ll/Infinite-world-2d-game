@@ -5,129 +5,131 @@ import random
 pygame.init()
 screen = pygame.display.set_mode((600,400))
 clock = pygame.time.Clock()
-move = [0,0]
 
 scroll = [0,0]
-jumping = False
 
-player = pygame.image.load("standing.png")
-player = pygame.transform.scale(player, (16, 26))
-player_rect = player.get_rect()
-player_rect.x = 200
-player_rect.y = 20
-grass = pygame.image.load("grass.png")
-grass_img = pygame.transform.scale(grass, (32, 32))
-dirt = pygame.image.load("dirt.png")
-dirt_img = pygame.transform.scale(dirt, (32, 32))
+class Player:
+    def __init__(self):
+        self.p = pygame.image.load("standing.png")
+        self.p = pygame.transform.scale(self.p, (16, 26))
+        self.rect = self.p.get_rect()
+        self.rect.x = 200
+        self.rect.y = 20
+        self.jump_h = 5
+        self.y_vel = self.jump_h
+        self.y_gravity = 0.5
+        self.on_ground = False
+        self.jumping = False
+        self.move = [0,0]
 
-path = "map.txt"
+    def gravity(self):
+        if self.jumping == False:
+            self.on_ground = False
+            self.move[1] += self.y_gravity
 
-jump_h = 5
-y_vel = jump_h
-gravity = 0.5
-on_ground = False
+    def jump(self):
+        if self.jumpig:
+            self.on_ground = False
+            self.move[1] -= self.y_vel
+            self.y_vel -= self.y_gravity
 
-def gravity_force():
-    global jumping, on_ground
-    if on_ground == False:
-        move[1] += 0.5
+            if self.y_vel < -self.jump_h:
+                self.y_vel = self.jump_h
+                self.jumping = False
 
-
-def jump():
-    global jumping,y_vel,jump_h,gravity, on_ground
-    if jumping == True:
-        on_ground = False
-        move[1] -= y_vel
-        y_vel -= gravity
-        if y_vel == -jump_h:
-            y_vel = jump_h
-            move[1] = 0
-            jumping = False
-
-
-
-def generate_world():
-    tiles = []
-    with open(path,"r") as f:
-        file = f.readlines()
-    row = 0
-    for line in file:
-        col = 0
-        for tile in line:
-            if tile == '1':
-                img_rect = dirt.get_rect()
-                img_rect.x = col * 32 #- scroll[0]
-                img_rect.y = row * 32 #- scroll[1]
-                til = (dirt_img,img_rect)
-                tiles.append(til)
-            if tile == '2':
-                img_rect = grass.get_rect()
-                img_rect.x = col * 32 #- scroll[0]
-                img_rect.y = row * 32 #- scroll[1]
-                til = (grass_img, img_rect)
-                tiles.append(til)
-            col += 1
-        row += 1
-    return tiles
+        else:
+            gravity()
+    def collision_check(self,tiles):
+        collisions = []
+        for tile in tiles:
+            if self.rect.colliderect(tile[1]):
+                collisions.append(tile[1])
+                
+        return collisions
+    
+    def move_p(self,tiles):
+        self.rect.x += self.move[0]
+        col = self.collision_check(tiles)
+        for tile in col:
+            if self.move[0] > 0:
+                self.rect.right = tile.left
+            if self.move[0] < 0:
+                self.rect.left = tile.right
+        self.rect.y += self.move[1]
+        col = self.collision_check(tiles)
+        for tile in col:
+            if self.move[1] > 0:
+                self.rect.bottom = tile.top
+                on_ground = True
+            # if movement[1] < 0:
+            #     player.top = tile.bottom
+        return player
+    
 
 
-def draw_world(tiles):
-    for tile in tiles:
-        screen.blit(tile[0],tile[1])
 
-chunk_size = 8
-def generate_chunk(x,y):
-    chunk_data = []
-    for y_pos in range(chunk_size):
-        for x_pos in range(chunk_size):
-            trage_x = x * chunk_size + x_pos
-            trage_y = y * chunk_size + y_pos
-            tile_type = 0 #nothing
-            if tatget_y > 10:
-                tile_type = 2 #grass
-            elif target_y == 10:
-                tile_type = 1 #dirt
-            if tile_type != 0:
-                chunk_data.append([[target_x,target_y],tile_type])
-    return chank_data
+class World:
+    def __init__(self):
+        self.path = "map.txt"
+        self.grass = pygame.image.load("grass.png")
+        self.grass_img = pygame.transform.scale(self.grass, (32, 32))
+        self.dirt = pygame.image.load("dirt.png")
+        self.dirt_img = pygame.transform.scale(self.dirt, (32, 32))
+        self.tile = []
+    def generate_world(self):
+        self.tiles = []
+        with open(self.path,"r") as f:
+            file = f.readlines()
+        row = 0
+        for line in file:
+            col = 0
+            for tile in line:
+                if tile == '1':
+                    img_rect = self.dirt.get_rect()
+                    img_rect.x = col * 32 #- scroll[0]
+                    img_rect.y = row * 32 #- scroll[1]
+                    til = (self.dirt_img,img_rect)
+                    self.tiles.append(til)
+                if tile == '2':
+                    img_rect = self.grass.get_rect()
+                    img_rect.x = col * 32 #- scroll[0]
+                    img_rect.y = row * 32 #- scroll[1]
+                    til = (self.grass_img, img_rect)
+                    self.tiles.append(til)
+                col += 1
+            row += 1
+        return self.tiles
 
-            
-def collision_check(player,tiles):
-    global on_ground
-    collisions = []
-    for tile in tiles:
-        if player.colliderect(tile[1]):
-            collisions.append(tile[1])
-            
-    return collisions
+    def draw_world(self):
+        for tile in self.tiles:
+            screen.blit(tile[0],tile[1])
 
 
-def move_p(player,movement,tiles):
-    global on_ground
-    player.x += movement[0]
-    col = collision_check(player,tiles)
-    for tile in col:
-        if movement[0] > 0:
-            player.right = tile.left
-        if movement[0] < 0:
-            player.left = tile.right
-    player.y += movement[1]
-    col = collision_check(player,tiles)
-    for tile in col:
-        if movement[1] > 0:
-            player.bottom = tile.top
-            on_ground = True
-        # if movement[1] < 0:
-        #     player.top = tile.bottom
-    return player
+
+# chunk_size = 8
+# def generate_chunk(x,y):
+#     chunk_data = []
+#     for y_pos in range(chunk_size):
+#         for x_pos in range(chunk_size):
+#             trage_x = x * chunk_size + x_pos
+#             trage_y = y * chunk_size + y_pos
+#             tile_type = 0 #nothing
+#             if tatget_y > 10:
+#                 tile_type = 2 #grass
+#             elif target_y == 10:
+#                 tile_type = 1 #dirt
+#             if tile_type != 0:
+#                 chunk_data.append([[target_x,target_y],tile_type])
+#     return chank_data
+
 
 left = False
 down = False
 up = False
 right = False
 
-
-tiles = generate_world()
+world = World()
+player = Player()
 while True:
 
     # scroll[0] += (player_rect.x-scroll[0]-300)/40
@@ -181,13 +183,11 @@ while True:
 
 
     screen.fill((255,255,255))
-    screen.blit(player,(player_rect.x-scroll[0],player_rect.y-scroll[1]))
-    draw_world(tiles)
-    #tiles = generate_world()
-    # print(on_ground)
-    move_p(player_rect,move,tiles)  
-    gravity_force()
-    # print(player_rect.x)
-    print(on_ground)
+    world.generate_world()
+    world.draw_world()
+    screen.blit(player.p,(player.rect.x,player.rect.y))
+    player.collision_check(world.tiles)
+    player.gravity()
+    player.move_p(world.tiles)
     pygame.display.update()
     clock.tick(60)
