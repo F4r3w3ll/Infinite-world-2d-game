@@ -14,8 +14,8 @@ class Player:
         self.p = pygame.transform.scale(self.p, (16, 26))
         self.rect = self.p.get_rect()
         self.rect.x = 200
-        self.rect.y = 20
-        self.jump_h = 5
+        self.rect.y = 220
+        self.jump_h = 4
         self.y_vel = self.jump_h
         self.y_gravity = 0.5
         self.on_ground = False
@@ -23,22 +23,20 @@ class Player:
         self.move = [0,0]
 
     def gravity(self):
-        if self.jumping == False:
-            self.on_ground = False
+        if self.jumping == False and player.on_ground == False:
             self.move[1] += self.y_gravity
 
     def jump(self):
-        if self.jumpig:
-            self.on_ground = False
+        if self.jumping:
             self.move[1] -= self.y_vel
             self.y_vel -= self.y_gravity
-
             if self.y_vel < -self.jump_h:
                 self.y_vel = self.jump_h
                 self.jumping = False
-
         else:
-            gravity()
+            self.gravity()
+
+
     def collision_check(self,tiles):
         collisions = []
         for tile in tiles:
@@ -60,7 +58,8 @@ class Player:
         for tile in col:
             if self.move[1] > 0:
                 self.rect.bottom = tile.top
-                on_ground = True
+                self.on_ground = True
+                # self.move[1] = 0
             # if movement[1] < 0:
             #     player.top = tile.bottom
         return player
@@ -140,20 +139,15 @@ while True:
             pygame.quit()
             sys.exit()
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_SPACE]:
-            jumping = True
-            jump()
-            on_ground = False
-            jumping = False
+
         if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                if player.on_ground == True:
+                    player.jumping = True
             if event.key == pygame.K_d:
                 right = True
             if event.key == pygame.K_a:
                 left = True
-            # if event.key == pygame.K_w:
-            #     up = True
-            # if event.key == pygame.K_s:
-            #     down = True
             if event.key == pygame.K_ESCAPE:
                 pygame.quit()
                 sys.exit()
@@ -161,25 +155,14 @@ while True:
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_d:
                 right = False
-                move[0] = 0
+                player.move[0] = 0
             if event.key == pygame.K_a:
                 left = False
-                move[0] = 0
-            # if event.key == pygame.K_w:
-            #     up = False
-            #     move[1] = 0
-            # if event.key == pygame.K_s:
-            #     down = False
-            #     move[1] = 0
+                player.move[0] = 0
     if right:
-        move[0] = 3
+        player.move[0] = 3
     if left:
-        move[0] = -3
-    # if up:
-    #     move[1] = -3
-    # if down:
-    #     move[1] = 3
-
+        player.move[0] = -3
 
 
     screen.fill((255,255,255))
@@ -187,7 +170,7 @@ while True:
     world.draw_world()
     screen.blit(player.p,(player.rect.x,player.rect.y))
     player.collision_check(world.tiles)
-    player.gravity()
+    player.jump()
     player.move_p(world.tiles)
     pygame.display.update()
     clock.tick(60)
