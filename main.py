@@ -12,10 +12,11 @@ class Player:
     def __init__(self):
         self.p = pygame.image.load("standing.png")
         self.p = pygame.transform.scale(self.p, (16, 26))
+        self.p.set_colorkey((47,232,45))
         self.rect = self.p.get_rect()
         self.rect.x = 200
         self.rect.y = 220
-        self.jump_h = 4
+        self.jump_h = 3
         self.y_vel = self.jump_h
         self.y_gravity = 0.5
         self.on_ground = False
@@ -28,6 +29,7 @@ class Player:
 
     def jump(self):
         if self.jumping:
+            self.on_ground = False
             self.move[1] -= self.y_vel
             self.y_vel -= self.y_gravity
             if self.y_vel < -self.jump_h:
@@ -54,14 +56,15 @@ class Player:
             if self.move[0] < 0:
                 self.rect.left = tile.right
         self.rect.y += self.move[1]
+        self.on_ground = False
         col = self.collision_check(tiles)
         for tile in col:
             if self.move[1] > 0:
                 self.rect.bottom = tile.top
+                self.move[1] = 0
                 self.on_ground = True
-                # self.move[1] = 0
-            # if movement[1] < 0:
-            #     player.top = tile.bottom
+            if self.move[1] < 0:
+                self.rect.top = tile.bottom
         return player
     
 
@@ -172,5 +175,6 @@ while True:
     player.collision_check(world.tiles)
     player.jump()
     player.move_p(world.tiles)
+    
     pygame.display.update()
     clock.tick(60)
