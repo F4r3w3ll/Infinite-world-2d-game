@@ -6,12 +6,14 @@ pygame.init()
 screen = pygame.display.set_mode((600,400))
 clock = pygame.time.Clock()
 
-scroll = [0,0]
+true_camera_scroll = [0,0]
+
+background_objects = [[0.5,[50,100,40,800]],[0.75,[270,200,100,800]],[0.5,[400,100,40,800]],[0.75,[550,50,50,800]]]
 
 class Player:
     def __init__(self):
         self.p = pygame.image.load("standing.png")
-        self.p = pygame.transform.scale(self.p, (16, 26))
+        self.p = pygame.transform.scale(self.p, (16, 32))
         self.p.set_colorkey((47,232,45))
         self.rect = self.p.get_rect()
         self.rect.x = 200
@@ -29,7 +31,6 @@ class Player:
 
     def jump(self):
         if self.jumping:
-            self.on_ground = False
             self.move[1] -= self.y_vel
             self.y_vel -= self.y_gravity
             if self.y_vel < -self.jump_h:
@@ -56,12 +57,12 @@ class Player:
             if self.move[0] < 0:
                 self.rect.left = tile.right
         self.rect.y += self.move[1]
-        self.on_ground = False
         col = self.collision_check(tiles)
+        self.on_ground = False
         for tile in col:
             if self.move[1] > 0:
                 self.rect.bottom = tile.top
-                self.move[1] = 0
+                self.y_vel = self.jump_h
                 self.on_ground = True
             if self.move[1] < 0:
                 self.rect.top = tile.bottom
@@ -87,15 +88,15 @@ class World:
             col = 0
             for tile in line:
                 if tile == '1':
-                    img_rect = self.dirt.get_rect()
-                    img_rect.x = col * 32 #- scroll[0]
-                    img_rect.y = row * 32 #- scroll[1]
+                    img_rect = self.dirt_img.get_rect()
+                    img_rect.x = (col * 32)
+                    img_rect.y = (row * 32)
                     til = (self.dirt_img,img_rect)
                     self.tiles.append(til)
                 if tile == '2':
-                    img_rect = self.grass.get_rect()
-                    img_rect.x = col * 32 #- scroll[0]
-                    img_rect.y = row * 32 #- scroll[1]
+                    img_rect = self.grass_img.get_rect()
+                    img_rect.x = (col * 32)
+                    img_rect.y = (row * 32)
                     til = (self.grass_img, img_rect)
                     self.tiles.append(til)
                 col += 1
@@ -104,7 +105,7 @@ class World:
 
     def draw_world(self):
         for tile in self.tiles:
-            screen.blit(tile[0],tile[1])
+            screen.blit(tile[0], (tile[1].x - camera_scroll[0], tile[1].y - camera_scroll[1]))
 
 
 
@@ -126,22 +127,26 @@ class World:
 
 
 left = False
-down = False
-up = False
 right = False
 
 world = World()
 player = Player()
 while True:
 
-    # scroll[0] += (player_rect.x-scroll[0]-300)/40
-    # scroll[1] += (player_rect.y-scroll[1]-200)/40
+    true_camera_scroll[0] += (player.rect.x-true_camera_scroll[0]-308)/50
+    true_camera_scroll[1] += (player.rect.y-true_camera_scroll[1]-216)/50
+
+    camera_scroll = true_camera_scroll.copy()
+    camera_scroll[0] = int(camera_scroll[0])
+    camera_scroll[1] = int(camera_scroll[1])
+
+    
+
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-        keys = pygame.key.get_pressed()
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
@@ -169,12 +174,18 @@ while True:
 
 
     screen.fill((255,255,255))
+    for background_object in background_objects:
+        obj_rect = pygame.Rect(background_object[1][0] - camera_scroll[0]*background_object[0],background_object[1][1] - camera_scroll[1]*background_object[0],background_object[1][2],background_object[1][3])
+        if background_object[0] == 0.5:
+            pygame.draw.rect(screen,(14,222,150),obj_rect)
+        else:
+            pygame.draw.rect(screen,(9,91,85),obj_rect)
     world.generate_world()
     world.draw_world()
-    screen.blit(player.p,(player.rect.x,player.rect.y))
-    player.collision_check(world.tiles)
+    screen.blit(player.p,(player.rect.x-camera_scroll[0],player.rect.y-camera_scroll[1]))
     player.jump()
+    player.collision_check(world.tiles)
     player.move_p(world.tiles)
     
-    pygame.display.update()
     clock.tick(60)
+    pygame.display.update()
