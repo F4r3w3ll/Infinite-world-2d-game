@@ -6,16 +6,17 @@
 
 - Python 3.10+
 - Pygame
+- Noise
 
 ```bash
-pip install pygame
+pip install pygame noise
 ```
 
 ## Running the game
 
 ```bash
 git clone <repo-url>
-cd 2D_Game
+cd Infinite-world-2d-game
 python main.py
 ```
 
