@@ -26,3 +26,6 @@ python main.py
 |-----------|-------------------------|
 | A / D     | Move left / right       |
 | Space     | Jump                    |
+| O / P     | Fadein / Fadeout music  |
+| ESC       | Close game              |
+
