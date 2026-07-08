@@ -14,7 +14,6 @@ clock = pygame.time.Clock()
 
 """
 To do:
-- walking sound
 - enemy
 - randering clouds
 - braking and placing blocks  
@@ -234,9 +233,11 @@ class World:
                             tile_type = 5
                 if tile_type != 0:
                     self.chunk_data.append([[target_x,target_y],tile_type])
+
         return self.chunk_data
     
     def chunk_location(self):
+        self.tiles = []
         for y in range(3):
             for x in range(4):
                 self.target_x = x - 1 + int(round(camera_scroll[0]/(self.chunk_size*32)))
@@ -292,6 +293,9 @@ class World:
             screen.blit(tile[0], (tile[1].x - camera_scroll[0], tile[1].y - camera_scroll[1]))
 
 
+pygame.mixer.music.load("sounds\music\song.mp3")
+pygame.mixer.music.play(-1,0,500)
+pygame.mixer.music.set_volume(0.05)
 
 left = False
 right = False
@@ -328,6 +332,10 @@ while True:
                 right = True
             if event.key == pygame.K_a:
                 left = True
+            if event.key == pygame.K_p:
+                pygame.mixer.music.fadeout(500)
+            if event.key == pygame.K_o:
+                pygame.mixer.music.play(-1,0,500)
             if event.key == pygame.K_ESCAPE:
                 pygame.quit()
                 sys.exit()
@@ -352,7 +360,5 @@ while True:
     player.collision_check(world.tiles)
     player.move_p(world.tiles)
     player.render()
-    # print("chunks: ",len(world.game_map))
-    # print("fps: ",clock.get_fps())
     pygame.display.update()
-    clock.tick(50)
+    clock.tick(60)
