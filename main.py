@@ -12,13 +12,6 @@ screen = pygame.display.set_mode((600,400))
 clock = pygame.time.Clock()
 
 
-"""
-To do:
-- enemy
-- randering clouds
-- braking and placing blocks  
-"""
-
 true_camera_scroll = [0,0]
 
 background_objects = [[0.25,[50,100,40,800]],[0.35,[270,200,100,800]],[0.35,[400,100,40,800]],[0.25,[550,50,50,800]]]
