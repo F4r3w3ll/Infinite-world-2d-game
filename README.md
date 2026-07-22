@@ -1,5 +1,5 @@
 # Infinite-world-2d-game
-2D game with infinite world, with radanom world generation. Made in Python. In progress.
+A 2D game with an infinite world where your goal is to collect as many coins as possible while enemies continuously chase you. The longer you survive, the more enemies spawn.
 
 
 ## Requirements
