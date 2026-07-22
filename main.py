@@ -14,9 +14,7 @@ clock = pygame.time.Clock()
 
 true_camera_scroll = [0,0]
 
-background_objects = [[0.25,[50,100,40,800]],[0.35,[270,200,100,800]],[0.35,[400,100,40,800]],[0.25,[550,50,50,800]]]
-
-
+#background_objects = [[0.25,[50,100,40,800]],[0.35,[270,200,100,800]],[0.35,[400,100,40,800]],[0.25,[550,50,50,800]]]
 
 
 
@@ -34,8 +32,10 @@ class Player:
     def __init__(self):
         self.walk_sound = pygame.mixer.Sound("sounds/walk.mp3")
         self.jump_sound = pygame.mixer.Sound("sounds/jumping.mp3")
+        self.coin_sound = pygame.mixer.Sound("sounds/coin.mp3")
         self.jump_sound.set_volume(0.5)
         self.walk_sound.set_volume(0.1)
+        self.coin_sound.set_volume(0.01)
         colorkey = (47, 232, 45)
         sprite = pygame.image.load("player/moving2.png").convert_alpha()
         sprite_left = pygame.image.load("player/moving_left.png").convert_alpha()
@@ -109,6 +109,15 @@ class Player:
         return player
     
 
+    def coin_coll(self,coins):
+        for coin in coins:
+            if self.rect.colliderect(coin):
+                self.coin_sound.play()
+                coin.x = -100
+                coin.y = -100
+
+
+
     def update_right(self):
 
         self.walk_r += 1
@@ -143,7 +152,6 @@ class Player:
                 self.grass_t = 20
 
         
-
     def render(self):
         if right:
             w_r = self.walk_right[self.cur_right]
@@ -163,12 +171,12 @@ class Player:
             screen.blit(self.p, (self.rect.x-camera_scroll[0], self.rect.y-camera_scroll[1]))
     
 
-
-
 class World:
     def __init__(self):
+
         color = (252,223,205)
         self.path = "map.txt"
+
         self.grass = pygame.image.load("images/grass.png").convert_alpha()
         self.grass_img = pygame.transform.scale(self.grass, (32, 32))
         self.dirt = pygame.image.load("images/dirt.png").convert_alpha()
@@ -182,6 +190,8 @@ class World:
         self.plant3 = pygame.image.load("images/plant3.png").convert_alpha()
         self.plant3_img = pygame.transform.scale(self.plant3,(32,32))
         self.plant3_img.set_colorkey(color)
+
+
         self.tile = []
         self.chunk_size = 8
         self.chunk_data = []
@@ -189,6 +199,21 @@ class World:
         self.target_x = 0
         self.target_y = 0
         self.target_chunk = 0
+
+
+        self.coin_sprite = []
+        self.coin_pos = 0
+        self.cur_coin_pos = 0
+        g_coin = pygame.image.load("images/coins/gold_coin.png").convert()
+        self.g_coin_sprite = [get_image(g_coin, i, 16, 16, 1, (0,0,0)) for i in range(4)]
+        s_coin = pygame.image.load("images/coins/silver_coin.png").convert()
+        self.s_coin_sprite = [get_image(s_coin, i, 16, 16, 1, (0,0,0)) for i in range(4)]
+        r_coin = pygame.image.load("images/coins/ruby_coin.png").convert()
+        self.r_coin_sprite = [get_image(r_coin, i, 16, 16, 1, (0,0,0)) for i in range(4)]
+        self.coin_tile = []
+
+
+
         self.tile_index = {1:self.dirt_img,
                            2:self.grass_img,
                            3:self.plant1_img,
@@ -203,6 +228,15 @@ class World:
             cloud.set_colorkey((34, 177, 76))
             self.clouds.append(cloud)
 
+
+    def update_coin(self):
+        self.coin_pos += 0.5
+        if self.coin_pos % 1750 == 0:
+            self.cur_coin_pos += 1
+        if self.cur_coin_pos == 4:
+            self.cur_coin_pos = 0
+
+
     def generate_chunk(self,x,y):
         self.chunk_data = []
         for y_pos in range(self.chunk_size):
@@ -216,7 +250,8 @@ class World:
                 elif target_y == 8-height:
                     tile_type = 2 #grass
                 elif target_y == 8-height-1:
-                    if random.randint(1,6) == 3:#plants
+                    number = random.randint(1,9)
+                    if number%3 == 0:#plants
                         type = random.randint(1,3)
                         if type == 1:
                             tile_type = 3
@@ -224,6 +259,17 @@ class World:
                             tile_type = 4
                         if type == 3:
                             tile_type = 5
+                    if number == 9: #coin
+                        type = random.randint(1,3)
+                        if type == 1:
+                            tile_type = 6
+                        if type == 2:
+                            tile_type = 7
+                        if type == 3:
+                            tile_type = 8
+                        target_x = x * self.chunk_size + x_pos +0.25
+                        target_y = 8-height-0.6 
+                        self.coin_tile.append(pygame.Rect(target_x*32,target_y*32,16,16))
                 if tile_type != 0:
                     self.chunk_data.append([[target_x,target_y],tile_type])
 
@@ -240,10 +286,20 @@ class World:
                     self.game_map[self.target_chunk] = self.generate_chunk(self.target_x,self.target_y)
                     self.g_clouds = True
                 for t in self.game_map[self.target_chunk]:
-                    screen.blit(self.tile_index[t[1]],(t[0][0]*32-camera_scroll[0],t[0][1]*32-camera_scroll[1]))
+                    if t[1] == 6:
+                        image = self.g_coin_sprite[self.cur_coin_pos]
+                    elif t[1] == 7:
+                        image = self.s_coin_sprite[self.cur_coin_pos]
+                    elif t[1] == 8:
+                        image = self.r_coin_sprite[self.cur_coin_pos]
+                    else:
+                        image = self.tile_index[t[1]]
+                    screen.blit(image,(t[0][0]*32-camera_scroll[0],t[0][1]*32-camera_scroll[1]))
+                    self.update_coin()
                     if t[1] in [1,2]:
                         self.tiles.append(pygame.Rect(t[0][0]*32,t[0][1]*32,32,32))
     
+
     def moving_clouds(self):
         # print(self.target_x)
         # if self.g_clouds:
@@ -299,7 +355,6 @@ player = Player()
 
 while True:
 
-
     if player.grass_t > 0:
         player.grass_t -= 1
 
@@ -353,5 +408,6 @@ while True:
     player.collision_check(world.tiles)
     player.move_p(world.tiles)
     player.render()
+    player.coin_coll(world.coin_tile)
     pygame.display.update()
     clock.tick(60)
