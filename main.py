@@ -17,7 +17,6 @@ true_camera_scroll = [0,0]
 #background_objects = [[0.25,[50,100,40,800]],[0.35,[270,200,100,800]],[0.35,[400,100,40,800]],[0.25,[550,50,50,800]]]
 
 
-
 def get_image(sheet, frame, width, height, scale, color):
 
     image = pygame.Surface((width, height))
@@ -109,14 +108,12 @@ class Player:
         return player
     
 
-    def coin_coll(self,coins):
-        for coin in coins:
-            if self.rect.colliderect(coin):
-                self.coin_sound.play()
-                coin.x = -100
-                coin.y = -100
-
-
+    def coin_coll(self,coin):
+        collision = False
+        if self.rect.colliderect(coin):
+            self.coin_sound.play()
+            collision = True
+        return collision
 
     def update_right(self):
 
@@ -210,7 +207,6 @@ class World:
         self.s_coin_sprite = [get_image(s_coin, i, 16, 16, 1, (0,0,0)) for i in range(4)]
         r_coin = pygame.image.load("images/coins/ruby_coin.png").convert()
         self.r_coin_sprite = [get_image(r_coin, i, 16, 16, 1, (0,0,0)) for i in range(4)]
-        self.coin_tile = []
 
 
 
@@ -231,7 +227,7 @@ class World:
 
     def update_coin(self):
         self.coin_pos += 0.5
-        if self.coin_pos % 1750 == 0:
+        if self.coin_pos % 12 == 0:
             self.cur_coin_pos += 1
         if self.cur_coin_pos == 4:
             self.cur_coin_pos = 0
@@ -250,33 +246,21 @@ class World:
                 elif target_y == 8-height:
                     tile_type = 2 #grass
                 elif target_y == 8-height-1:
-                    number = random.randint(1,9)
-                    if number%3 == 0:#plants
-                        type = random.randint(1,3)
-                        if type == 1:
-                            tile_type = 3
-                        if type == 2:
-                            tile_type = 4
-                        if type == 3:
-                            tile_type = 5
-                    if number == 9: #coin
-                        type = random.randint(1,3)
-                        if type == 1:
-                            tile_type = 6
-                        if type == 2:
-                            tile_type = 7
-                        if type == 3:
-                            tile_type = 8
-                        target_x = x * self.chunk_size + x_pos +0.25
-                        target_y = 8-height-0.6 
-                        self.coin_tile.append(pygame.Rect(target_x*32,target_y*32,16,16))
+                    number = random.randint(1,10)
+                    if number == 10:  # moneta
+                        coin_type = random.randint(1, 3)
+                        tile_type = 5 + coin_type  # 6: złota, 7: srebrna, 8: rubinowa
+                    elif number % 3 == 0:  # roślina (tylko gdy number != 10)
+                        tile_type = random.randint(3, 5)
                 if tile_type != 0:
                     self.chunk_data.append([[target_x,target_y],tile_type])
 
         return self.chunk_data
+
     
     def chunk_location(self):
         self.tiles = []
+        self.update_coin()
         for y in range(3):
             for x in range(4):
                 self.target_x = x - 1 + int(round(camera_scroll[0]/(self.chunk_size*32)))
@@ -286,6 +270,17 @@ class World:
                     self.game_map[self.target_chunk] = self.generate_chunk(self.target_x,self.target_y)
                     self.g_clouds = True
                 for t in self.game_map[self.target_chunk]:
+                    if t[1] == 0:
+                        continue
+
+                    pixel_x = t[0][0] * 32
+                    pixel_y = t[0][1] * 32
+                    coin_rect = pygame.Rect(pixel_x + 8, pixel_y + 8, 16, 16)
+                    if t[1] in [6,7,8] and player.coin_coll(coin_rect):
+                        t[1] = 0
+                        continue
+
+
                     if t[1] == 6:
                         image = self.g_coin_sprite[self.cur_coin_pos]
                     elif t[1] == 7:
@@ -294,10 +289,15 @@ class World:
                         image = self.r_coin_sprite[self.cur_coin_pos]
                     else:
                         image = self.tile_index[t[1]]
-                    screen.blit(image,(t[0][0]*32-camera_scroll[0],t[0][1]*32-camera_scroll[1]))
-                    self.update_coin()
-                    if t[1] in [1,2]:
-                        self.tiles.append(pygame.Rect(t[0][0]*32,t[0][1]*32,32,32))
+
+
+                    if t[1] in [6, 7, 8]:
+                        screen.blit(image, (pixel_x + 8 - camera_scroll[0], pixel_y + 8 - camera_scroll[1]))
+                    else:
+                        screen.blit(image, (pixel_x - camera_scroll[0], pixel_y - camera_scroll[1]))
+
+                    if t[1] in [1, 2]:
+                        self.tiles.append(pygame.Rect(pixel_x, pixel_y, 32, 32))
     
 
     def moving_clouds(self):
@@ -309,7 +309,6 @@ class World:
             else:
                 screen.blit(clouds[i],((self.target_x + 150 * i ) - camera_scroll[0],(self.target_y + 50 + random.randint(1,50)) - camera_scroll[1]))
         # self.g_clouds = False
-
 
 
     def generate_world(self):
@@ -340,6 +339,21 @@ class World:
     def draw_world(self):
         for tile in self.tiles:
             screen.blit(tile[0], (tile[1].x - camera_scroll[0], tile[1].y - camera_scroll[1]))
+
+
+    # def draw_coin(self):
+    #     for coin in self.coin_tile:
+    #         image = coin[0]
+    #         if coin[1] == 6:
+    #             image = self.g_coin_sprite[self.cur_coin_pos]
+    #         elif coin[1] == 7:
+    #             image = self.s_coin_sprite[self.cur_coin_pos]
+    #         elif coin[1] == 8:
+    #             image = self.r_coin_sprite[self.cur_coin_pos]
+    #     screen.blit(image,(coin[3][0],coin[3][1]))
+    #     self.update_coin()
+
+    
 
 
 pygame.mixer.music.load("sounds\music\song.mp3")
@@ -408,6 +422,6 @@ while True:
     player.collision_check(world.tiles)
     player.move_p(world.tiles)
     player.render()
-    player.coin_coll(world.coin_tile)
+    world.update_coin()
     pygame.display.update()
     clock.tick(60)
