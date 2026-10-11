@@ -10,9 +10,15 @@ mixer.init()
 
 screen = pygame.display.set_mode((600,400))
 clock = pygame.time.Clock()
+font = pygame.font.Font('freesansbold.ttf', 16)
 
 
 true_camera_scroll = [0,0]
+
+
+"""
+Blob
+"""
 
 #background_objects = [[0.25,[50,100,40,800]],[0.35,[270,200,100,800]],[0.35,[400,100,40,800]],[0.25,[550,50,50,800]]]
 
@@ -60,6 +66,7 @@ class Player:
         self.walk_left = [get_image(sprite_left, i, 16, 32, 1, colorkey) for i in range(8)]
         self.jump_frame = [get_image(sprite_jump, i, 16, 32, 1, colorkey) for i in range(8)]
         self.grass_t = 0
+        self.coin_count = 0
 
 
     def gravity(self):
@@ -114,6 +121,7 @@ class Player:
             self.coin_sound.play()
             collision = True
         return collision
+
 
     def update_right(self):
 
@@ -207,6 +215,8 @@ class World:
         self.s_coin_sprite = [get_image(s_coin, i, 16, 16, 1, (0,0,0)) for i in range(4)]
         r_coin = pygame.image.load("images/coins/ruby_coin.png").convert()
         self.r_coin_sprite = [get_image(r_coin, i, 16, 16, 1, (0,0,0)) for i in range(4)]
+        self.coin_type = self.s_coin_sprite[0]
+
 
 
 
@@ -277,6 +287,15 @@ class World:
                     pixel_y = t[0][1] * 32
                     coin_rect = pygame.Rect(pixel_x + 8, pixel_y + 8, 16, 16)
                     if t[1] in [6,7,8] and player.coin_coll(coin_rect):
+                        if t[1] == 6:
+                            player.coin_count += 2
+                            self.coin_type = self.g_coin_sprite[0]
+                        if t[1] == 7:
+                            player.coin_count += 1
+                            self.coin_type = self.s_coin_sprite[0]
+                        if t[1] == 8:
+                            player.coin_count += 3
+                            self.coin_type = self.r_coin_sprite[0]
                         t[1] = 0
                         continue
 
@@ -414,8 +433,10 @@ while True:
     if left:
         player.move[0] = -3
 
-
+    text = font.render(str(player.coin_count),True,(255,255,255),(0,250,255))
     screen.fill((0,250,255))
+    screen.blit(world.coin_type,(4,8))
+    screen.blit(text,(24,9))
     world.chunk_location()
 
     player.jump()
